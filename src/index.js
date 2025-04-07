@@ -1,97 +1,71 @@
 const express = require("express");
 const app = express();
 const port = 3000;
+const pool = require("./db");
 
-app.use(express.json()); // Permite ler JSON no corpo da requisição
+app.use(express.json());
 
-let database = [
-  {
-    id: 1,
-    nome: "Lucas",
-    idade: 20,
-  },
-  {
-    id: 2,
-    nome: "Ana",
-    idade: 25,
-  },
-  {
-    id: 3,
-    nome: "João",
-    idade: 30,
-  },
-  {
-    id: 4,
-    nome: "Maria",
-    idade: 28,
-  },
-];
-
-app.get("/users", (req, res) => {
-  res.send(database);
+app.get("/users", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM users");
+    res.json(result.rows);
+  } catch (e) {}
 });
 
-app.post("/users", (req, res) => {
-  database.push(req.body);
-  res.send(database);
+app.get("/users/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
+    if (result.rows.length === 0) {
+      return res.json({ erro: "Usuário nao encontrado" });
+    }
+    res.json(result.rows[0]);
+  } catch (e) {}
 });
 
-app.put("/users", (req, res) => {
-  const itemIndex = database.findIndex((item)=> item.id === req.body.id)
-  database[itemIndex] = req.body
-  res.send(database);
+app.post("/users/", async (req, res) => {
+  const { nome, idade, tamanho, cor, endereco } = req.body;
+  try {
+    const result = await pool.query(
+      "INSERT INTO users (nome, idade, tamanho, cor, endereco)VALUES ($1, $2, $3, $4, $5) RETURNING *",
+      [nome, idade, tamanho, cor, endereco]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (e) {
+    res.json({ error: e.message });
+  }
 });
 
-app.delete("/users", (req, res) => {
-  database = database.filter((item)=> item.id !== req.body.id)
-  res.send(database);
+app.put("/users/:id", async (req, res) => {
+  const { nome, idade, tamanho, cor, endereco } = req.body;
+  const {id} = req.params
+    try {
+    const result = await pool.query(
+      "UPDATE users SET nome = $1, idade = $2, tamanho = $3, cor = $4, endereco = $5 WHERE id = $6 RETURNING *",
+      [nome, idade, tamanho, cor, endereco, id]
+      );
+      if (result.rows.length === 0) {
+        return res.json({ erro: "Usuário nao encontrado" });
+      }
+    res.status(201).json(result.rows[0]);
+  } catch (e) {
+    res.json({ error: e.message });
+  }
 });
 
-let produtos = [
-  {
-  id: 45,
-  nome: "arroz", 
-  quantidade: 200,
-  },
-{  id: 39,
-  nome: "feijao",
-  quantidade: 300,
-},
-
-{  id: 74,
-  nome: "carne",
-  quantidade: 241,
-},
-
-{  id: 15,
-  nome: "salgadinho",
-  quantidade: 15
-},
-]
-app.get("/produtos", (req, res) => {
-  res.send(produtos);
-});
-
-
-app.post("/produtos", (req, res) => {
-  produtos.push(req.body);
-  res.send(produtos);
-});
-
-app.put("/produtos", (req, res) => {
-  const itemIndex = produtos.findIndex((item)=> item.id === req.body.id)
-  produtos[itemIndex] = req.body
-  res.send(produtos);
-});
-
-app.delete("/produtos", (req, res) => {
-  produtos = produtos.filter((item)=> item.id !== req.body.id)
-  res.send(produtos);
-});
-
-
-
-// Iniciando o servidor
-app.listen(port, () => {
-  console.log(`Servidor rodando em http://localhost:${port}`);
+app.delete("/users/:id", async (req, res) => {
+ const {id} = req.params
+  try {
+    const result = await pool.query(
+      "DELETE FROM users WHERE id = $1 RETURNING *",
+      [id]
+      );
+      if (result.rows.length === 0) {
+        return res.json({ erro: "Usuário nao encontrado" });
+      }
+    res.status(201).json(result.rows[0]);
+  } catch (e) {
+    res.json({ error: e.message });
+  }
 });
