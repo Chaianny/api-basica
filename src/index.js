@@ -2,70 +2,71 @@ const express = require("express");
 const app = express();
 const port = 3000;
 const pool = require("./db");
+const { sequelize, Wigs } = require("./models/index");
 
 app.use(express.json());
 
-app.get("/users", async (req, res) => {
+async function start() {
   try {
-    const result = await pool.query("SELECT * FROM users");
-    res.json(result.rows);
+    await sequelize.authenticate();
+    await sequelize.sync();
+    app.listen(port, () => {
+      console.log(`Servidor rodando em http://localhost:${port}`);
+    });
+  } catch (e) {}
+}
+
+app.get("/wigs", async (req, res) => {
+  try {
+    const result = await Wigs.findAll();
+    res.json(result);
   } catch (e) {}
 });
 
-app.get("/users/:id", async (req, res) => {
+app.get("/wigs/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
-    if (result.rows.length === 0) {
+    const result = await Wigs.findOne({ where: { id } });
+    if (result === null) {
       return res.json({ erro: "Usuário nao encontrado" });
     }
-    res.json(result.rows[0]);
+    res.json(result);
   } catch (e) {}
 });
 
-app.post("/users/", async (req, res) => {
-  const { nome, idade, tamanho, cor, endereco } = req.body;
+app.post("/wigs/", async (req, res) => {
   try {
-    const result = await pool.query(
-      "INSERT INTO users (nome, idade, tamanho, cor, endereco)VALUES ($1, $2, $3, $4, $5) RETURNING *",
-      [nome, idade, tamanho, cor, endereco]
-    );
-
-    res.status(201).json(result.rows[0]);
+    const result = await Wigs.create(req.body);
+    res.status(201).json(result);
   } catch (e) {
     res.json({ error: e.message });
   }
 });
 
-app.put("/users/:id", async (req, res) => {
-  const { nome, idade, tamanho, cor, endereco } = req.body;
-  const {id} = req.params
-    try {
-    const result = await pool.query(
-      "UPDATE users SET nome = $1, idade = $2, tamanho = $3, cor = $4, endereco = $5 WHERE id = $6 RETURNING *",
-      [nome, idade, tamanho, cor, endereco, id]
-      );
-      if (result.rows.length === 0) {
-        return res.json({ erro: "Usuário nao encontrado" });
-      }
-    res.status(201).json(result.rows[0]);
-  } catch (e) {
-    res.json({ error: e.message });
-  }
-});
-
-app.delete("/users/:id", async (req, res) => {
- const {id} = req.params
+app.put("/wigs/:id", async (req, res) => {
+  const { id } = req.params;
   try {
-    const result = await pool.query(
-      "DELETE FROM users WHERE id = $1 RETURNING *",
-      [id]
-      );
-      if (result.rows.length === 0) {
-        return res.json({ erro: "Usuário nao encontrado" });
-      }
-    res.status(201).json(result.rows[0]);
+    const result = await Wigs.update(req.body, { where: { id } });
+    console.log (result)
+    if (result === null) {
+      return res.json({ erro: "Usuário nao encontrado" });
+    }
+    res.status(201).json(result);
   } catch (e) {
     res.json({ error: e.message });
   }
 });
+
+app.delete("/wigs/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await Wigs.destroy({ where: { id}})
+    if (!result) {
+      return res.json({ erro: "Usuário nao encontrado" });
+    }
+    res.status(201).json(result);
+  } catch (e) {
+    res.json({ error: e.message });
+  }
+});
+start();
