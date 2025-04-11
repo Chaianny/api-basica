@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/Chaianny/api-basica#readme",
   "dependencies": {
+    "cors": "^2.8.5",
     "express": "^5.1.0",
     "pg": "^8.14.1",
     "pg-hstore": "^2.3.4",
