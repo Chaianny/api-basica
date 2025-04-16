@@ -1,31 +1,13 @@
-const express = require("express");
-const app = express();
-const port = 3000;
-const pool = require("./db");
-const { sequelize, Wigs } = require("./models/index");
-const cors = require('cors');
+const { Wigs } = require("../models/index");
 
-app.use(cors());
-app.use(express.json());
-
-async function start() {
-  try {
-    await sequelize.authenticate();
-    await sequelize.sync();
-    app.listen(port, () => {
-      console.log(`Servidor rodando em http://localhost:${port}`);
-    });
-  } catch (e) {}
-}
-
-app.get("/wigs", async (req, res) => {
+const getAllWigs = async (req, res) => {
   try {
     const result = await Wigs.findAll();
     res.json(result);
   } catch (e) {}
-});
+};
 
-app.get("/wigs/:id", async (req, res) => {
+const getWigbyId = async (req, res) => {
   const { id } = req.params;
   try {
     const result = await Wigs.findOne({ where: { id } });
@@ -34,22 +16,21 @@ app.get("/wigs/:id", async (req, res) => {
     }
     res.json(result);
   } catch (e) {}
-});
+};
 
-app.post("/wigs/", async (req, res) => {
+const createWig = async (req, res) => {
   try {
     const result = await Wigs.create(req.body);
     res.status(201).json(result);
   } catch (e) {
     res.json({ error: e.message });
   }
-});
+};
 
-app.put("/wigs/:id", async (req, res) => {
+const updateWig = async (req, res) => {
   const { id } = req.params;
   try {
     const result = await Wigs.update(req.body, { where: { id } });
-    console.log (result)
     if (result === null) {
       return res.json({ erro: "Usuário nao encontrado" });
     }
@@ -57,12 +38,12 @@ app.put("/wigs/:id", async (req, res) => {
   } catch (e) {
     res.json({ error: e.message });
   }
-});
+};
 
-app.delete("/wigs/:id", async (req, res) => {
+const deleteWig = async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await Wigs.destroy({ where: { id}})
+    const result = await Wigs.destroy({ where: { id } });
     if (!result) {
       return res.json({ erro: "Usuário nao encontrado" });
     }
@@ -70,5 +51,13 @@ app.delete("/wigs/:id", async (req, res) => {
   } catch (e) {
     res.json({ error: e.message });
   }
-});
-start();
+};
+
+
+module.exports = {
+    getAllWigs,
+    getWigbyId,
+    createWig,
+    updateWig,
+    deleteWig
+};
